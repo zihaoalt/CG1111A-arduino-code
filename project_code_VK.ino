@@ -28,6 +28,7 @@ int side =-1;
 int red = 0;
 int green = 0;
 int blue = 0;
+int ambIR;
 //floats to hold colour arrays
 float colourArray[] = {0,0,0};
 float whiteArray[] = {771.00, 912.00, 849.00};
@@ -153,7 +154,7 @@ void doubleRightTurn() {
   rightMotor.stop(); // Stop right motor
 }
 void nudgeLeft() {
-  int slowerSpeed = 20; // motor speed constant
+  int slowerSpeed = 10; // motor speed constant
 
 
   leftMotor.run(-slowerSpeed);
@@ -191,7 +192,7 @@ int readIR() {
   // int VOUT= analogRead(IRREAD);
   digitalWrite(DECODER_PIN_0, LOW);
   digitalWrite(DECODER_PIN_1, LOW);
-  delay(1); // turning the IR emitter back on to read actual IR value
+  delay(5); // turning the IR emitter back on to read actual IR value
   int VOUT = analogRead(IRREAD);
   //VOUT -= analogRead(IRREAD); // use the ambient IR 
   Serial.print("IR reading = ");
@@ -384,6 +385,12 @@ void setup()
   pinMode(A3, INPUT); // Color sensor is set to input to read
   pinMode(IRREAD, INPUT);
   Serial.begin(9600);
+  ambIR =0;
+  for (int i =0; i<5 ;i++){
+    ambIR += readIR();
+  }
+  ambIR = ambIR/ 5 + 50;
+  
   // setupColorSensor();
   // turnRight();
   // detectColor();
@@ -399,15 +406,20 @@ void loop()
   int Ultrasonicreading;
   IRreading = readIR();
   Ultrasonicreading = readUltrasonic();
-  if (Ultrasonicreading < 8 && Ultrasonicreading > 0) {
-    nudgeRight();
-  } else if (IRreading > 820 && Ultrasonicreading <= 13) {
+  if (Ultrasonicreading >= 8 && IRreading < ambIR) {
     moveForward();
-  } else if (IRreading > 820 ) {
-    nudgeLeft();
-  } else {
-    moveForward();
+  }else if (IRreading > ambIR) {
+      nudgeLeft();
+  }else if (Ultrasonicreading < 8 && Ultrasonicreading > 0){
+      nudgeRight();
   }
+  // } else if (IRreading > 820 && Ultrasonicreading <= 13) {
+  //   moveForward();
+  // } else if (IRreading > 820 ) {
+  //   nudgeLeft();
+  // } else {
+  //   moveForward();
+  // }
 
   int sensorState = lineFinder.readSensors();
   if (sensorState == S1_IN_S2_OUT){
@@ -435,9 +447,9 @@ void loop()
     if (color==0) turnLeft();
     if (color==2) turnRight();
     if (color==3){
-      if(Ultrasonicreading < 0 || IRreading > 800) side = -1;
+      if(Ultrasonicreading < 0 || IRreading > ambIR) side = -1;
       else if( Ultrasonicreading < 8 && Ultrasonicreading > 0) side = 1;
-      uTurn(side);
+      uTurn(side);  //1 if left, -1 if right 
     }
     if (color==4) doubleLeftTurn();
     if (color==1) doubleRightTurn();
